@@ -76,8 +76,8 @@
         };
 
         # Default package & app.
-        packages.default = self'.packages.haskell-template;
-        apps.default = self'.apps.haskell-template;
+        packages.default = self'.packages.challenge;
+        apps.default = self'.apps.challenge;
 
         # Default shell.
         devShells.default = pkgs.mkShell {

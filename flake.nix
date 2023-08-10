@@ -20,40 +20,46 @@
         # Our only Haskell project. You can have multiple projects, but this template
         # has only one.
         # See https://github.com/srid/haskell-flake/blob/master/example/flake.nix
-        haskellProjects.default = {
-          # The base package set (this value is the default)
-          # basePackages = pkgs.haskellPackages;
+        haskellProjects.default =
+          let
+            compiler = "ghc96";
+          in
+          {
+            # The base package set (this value is the default)
+            # basePackages = pkgs.haskell.packages.${compiler};
 
-          # Packages to add on top of `basePackages`
-          packages = {
-            # Add source or Hackage overrides here
-            # (Local packages are added automatically)
-            /*
+            # Packages to add on top of `basePackages`
+            packages = {
+              # Add source or Hackage overrides here
+              # (Local packages are added automatically)
+              /*
             aeson.source = "1.5.0.0" # Hackage version
             shower.source = inputs.shower; # Flake input
-            */
-          };
+              */
+              # unix.source = "2.7.3";
+              # unix-compat.source = "0.6";
+            };
 
-          # Add your package overrides here
-          settings = {
-            /*
+            # Add your package overrides here
+            settings = {
+              /*
             haskell-template = {
               haddock = false;
             };
             aeson = {
               check = false;
             };
-            */
-          };
+              */
+            };
 
-          # Development shell configuration
-          devShell = {
-            hlsCheck.enable = false;
-          };
+            # Development shell configuration
+            devShell = {
+              hlsCheck.enable = false;
+            };
 
-          # What should haskell-flake add to flake outputs?
-          autoWire = [ "packages" "apps" "checks" ]; # Wire all but the devShell
-        };
+            # What should haskell-flake add to flake outputs?
+            autoWire = [ "packages" "apps" "checks" ]; # Wire all but the devShell
+          };
 
         # Auto formatters. This also adds a flake check to ensure that the
         # source tree was auto formatted.

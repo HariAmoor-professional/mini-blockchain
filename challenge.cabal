@@ -1,36 +1,26 @@
-cabal-version:      2.4
+cabal-version:      3.6
 name:               anastasia-labs-challenge
 version:            0.1.0.0
-license:            MIT
-copyright:          2022 Sridhar Ratnakumar
-maintainer:         srid@srid.ca
-author:             Sridhar Ratnakumar
-category:           Web
+maintainer:         professional@hariamoor.me
+author:             Hari Amoor
+category:           Simple
 
 -- TODO: Before hackage release.
 -- A short (one-line) description of the package.
--- synopsis:
+synopsis:
+  Hari Amoor's implementation of Anastasia Labs technical challenge
 
 -- A longer description of the package.
--- description:
+description:
+  Mock implementation of Ouroboros BFT protocol by IOG using free monads
 
--- A URL where users can report bugs.
--- bug-reports:
-
-extra-source-files:
-  LICENSE
-  README.md
+extra-source-files: README.md
 
 common shared
   ghc-options:
     -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
     -Wmissing-deriving-strategies -Wunused-foralls -Wunused-foralls
     -fprint-explicit-foralls -fprint-explicit-kinds
-
-  mixins:
-    base hiding (Prelude),
-    relude (Relude as Prelude, Relude.Container.One),
-    relude
 
   default-extensions:
     NoStarIsType
@@ -74,23 +64,35 @@ common shared
     ViewPatterns
 
   build-depends:
-    , aeson
-    , async
-    , base          >=4.13.0.0 && <4.18.0.0.0
-    , data-default
-    , directory
-    , filepath
-    , mtl
-    , optics-core
-    , profunctors
-    , relude        >=1.0
-    , shower
-    , time
-    , with-utf8
+    , base
 
-  hs-source-dirs:     src
   default-language:   GHC2021
 
+library
+  import:          shared
+  hs-source-dirs:  src
+
+  build-depends:
+    , polysemy
+    , stm
+
+  exposed-modules: HDT.Tasks
+
+  other-modules:
+    , HDT.Agent
+    , HDT.Skeleton
+    , HDT.Blockchain
+
 executable challenge
-  import:  shared
-  main-is: Main.hs
+  import:         shared
+  build-depends:
+    , relude
+    , with-utf8
+
+  mixins:
+    base hiding (Prelude),
+    relude (Relude as Prelude, Relude.Container.One),
+    relude
+
+  hs-source-dirs: app
+  main-is:        Main.hs

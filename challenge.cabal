@@ -23,65 +23,29 @@ common shared
     -fprint-explicit-foralls -fprint-explicit-kinds
 
   default-extensions:
-    NoStarIsType
-    BangPatterns
-    ConstraintKinds
     DataKinds
-    DeriveDataTypeable
-    DeriveFoldable
-    DeriveFunctor
-    DeriveGeneric
-    DeriveLift
-    DeriveTraversable
     DerivingStrategies
-    DerivingVia
-    EmptyCase
-    EmptyDataDecls
-    EmptyDataDeriving
-    ExistentialQuantification
-    ExplicitForAll
-    FlexibleContexts
-    FlexibleInstances
-    GADTSyntax
-    GeneralisedNewtypeDeriving
-    ImportQualifiedPost
-    KindSignatures
-    LambdaCase
+    GeneralizedNewtypeDeriving
     MultiParamTypeClasses
-    MultiWayIf
-    NumericUnderscores
-    OverloadedStrings
-    PolyKinds
-    PostfixOperators
-    RankNTypes
-    ScopedTypeVariables
-    StandaloneDeriving
-    StandaloneKindSignatures
-    TupleSections
-    TypeApplications
-    TypeFamilies
-    TypeOperators
     ViewPatterns
 
-  build-depends:
-    , base
-
+  build-depends:      base
   default-language:   GHC2021
 
 library
   import:          shared
   hs-source-dirs:  src
-
   build-depends:
+    , optics
     , polysemy
+    , polysemy-time
     , stm
 
   exposed-modules: HDT.Tasks
-
   other-modules:
-    , HDT.Agent
-    , HDT.Skeleton
-    , HDT.Blockchain
+    HDT.Agent
+    HDT.Blockchain
+    HDT.Skeleton
 
 executable challenge
   import:         shared

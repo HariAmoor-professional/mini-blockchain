@@ -5,21 +5,38 @@ module HDT.Agent (
   receive,
 ) where
 
-data Agent msg a
+import Polysemy
+import Polysemy.AtomicState
+import Polysemy.Async
+import Polysemy.State
 
-instance Functor (Agent msg)
+import Control.Concurrent.STM
+import Numeric.Natural
 
-instance Applicative (Agent msg)
+import Optics
 
-instance Monad (Agent msg)
+newtype Agent msg a = 
+  MkAgent (
+    Sem '[
+      Async
+      , AtomicState Natural
+      , State (TChan (Natural, msg))
+      , Embed IO
+    ] a)
+  deriving newtype (Functor, Applicative, Monad)
 
 delay :: Agent msg ()
-delay = error "TODO: implement delay"
-
+delay = MkAgent $ atomicModify @Natural (+1)
+  
 broadcast ::
   msg ->
   Agent msg ()
-broadcast = error "TODO: implement broadcast"
+broadcast m = MkAgent $ do
+  slot <- atomicGet @Natural
+  chan <- get
+  embed $ atomically $ writeTChan chan (slot, m)
 
 receive :: Agent msg msg
-receive = error "TODO: implement receive"
+receive = MkAgent $ do
+  chan :: TChan (Natural, msg) <- get
+  (^. _2) <$> embed $ atomically $ readTChan chan

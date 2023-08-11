@@ -9,11 +9,10 @@ import Polysemy
 import Polysemy.AtomicState
 import Polysemy.Async
 import Polysemy.State
+import Polysemy.Resource
 
 import Control.Concurrent.STM
 import Numeric.Natural
-
-import Optics
 
 newtype Agent msg a = 
   MkAgent (
@@ -21,7 +20,9 @@ newtype Agent msg a =
       Async
       , AtomicState Natural
       , State (TChan (Natural, msg))
-      , Embed IO
+      , Embed STM
+      , Final IO
+      , Resource
     ] a)
   deriving newtype (Functor, Applicative, Monad)
 
@@ -34,9 +35,10 @@ broadcast ::
 broadcast m = MkAgent $ do
   slot <- atomicGet @Natural
   chan <- get
-  embed $ atomically $ writeTChan chan (slot, m)
+  embed $ writeTChan chan (slot, m)
 
 receive :: Agent msg msg
 receive = MkAgent $ do
   chan :: TChan (Natural, msg) <- get
-  (^. _2) <$> embed $ atomically $ readTChan chan
+  (_, m) <- embed $ readTChan chan
+  return m

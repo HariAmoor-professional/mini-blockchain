@@ -36,9 +36,7 @@ library
   import:          shared
   hs-source-dirs:  src
   build-depends:
-    , optics
     , polysemy
-    , polysemy-time
     , stm
 
   exposed-modules: HDT.Tasks

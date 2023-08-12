@@ -7,38 +7,29 @@ module HDT.Agent (
 
 import Polysemy
 import Polysemy.AtomicState
-import Polysemy.Async
-import Polysemy.State
-import Polysemy.Resource
+import Polysemy.Input
+import Polysemy.Output
 
-import Control.Concurrent.STM
 import Numeric.Natural
 
-newtype Agent msg a = 
-  MkAgent (
-    Sem '[
-      Async
-      , AtomicState Natural
-      , State (TChan (Natural, msg))
-      , Embed STM
-      , Final IO
-      , Resource
-    ] a)
+newtype Agent msg a
+  = MkAgent
+      ( Sem
+          '[ AtomicState Natural
+           , Input msg
+           , Output msg
+           ]
+          a
+      )
   deriving newtype (Functor, Applicative, Monad)
 
 delay :: Agent msg ()
-delay = MkAgent $ atomicModify @Natural (+1)
-  
+delay = MkAgent $ atomicModify @Natural (+ 1)
+
 broadcast ::
   msg ->
   Agent msg ()
-broadcast m = MkAgent $ do
-  slot <- atomicGet @Natural
-  chan <- get
-  embed $ writeTChan chan (slot, m)
+broadcast = MkAgent . output
 
 receive :: Agent msg msg
-receive = MkAgent $ do
-  chan :: TChan (Natural, msg) <- get
-  (_, m) <- embed $ readTChan chan
-  return m
+receive = MkAgent input

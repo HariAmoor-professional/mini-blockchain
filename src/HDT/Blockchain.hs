@@ -11,6 +11,10 @@ module HDT.Blockchain (
 import HDT.Agent
 import HDT.Skeleton
 
+import Polysemy.AtomicState
+
+import Data.Bool.HT
+
 import Numeric.Natural
 
 runIO ::
@@ -27,25 +31,53 @@ slotLeader ::
   Int ->
   Slot ->
   NodeId
-slotLeader n slot = fromIntegral n `mod` slot
+slotLeader n slot = slot `mod` fromIntegral n
 
 chainValid ::
   Int ->
   Slot ->
   Chain ->
   Bool
-chainValid _ currSlot Genesis = currSlot == 0
-chainValid _ currSlot (Genesis :> b) = currSlot >= slot b && slot b > 0
-chainValid _ _ _ = False
+chainValid _ currSlot Genesis = currSlot >= 0
+chainValid n currSlot (a :> b) =
+  currSlot >= slot b -- Not exceeding time
+    & creator b == slotLeader n (slot b) -- Correct slot leader
+      && slot b
+        > ( case a of
+              Genesis -> 0
+              _ :> a' -> slot a'
+          )
+      && chainValid n currSlot a -- Strictly increasing
 
 clock :: Agent BftMessage a
-clock = error "TODO: implement clock"
+clock =
+  delay
+    >> MkAgent (atomicGet @Natural)
+    >>= broadcast . Time
+    >> clock
 
 node ::
   Int ->
   NodeId ->
   Agent BftMessage a
-node = error "TODO: implement node"
+node = currentChain Genesis
+  where
+    currentChain :: Chain -> Int -> NodeId -> Agent BftMessage a
+    currentChain l n creator = do
+      slot <- MkAgent (atomicGet @Natural)
+      if slotLeader n slot == creator
+        then do
+          NewChain other <- receive
+          let newChain =
+                ( chainValid other
+                    && chainLength other
+                    > chainLength l
+                    ?: (other, l)
+                )
+                  :> Block {..}
+          broadcast $ NewChain newChain
+          currentChain newChain n creator
+        else currentChain l n creator
 
 runPure ::
   [Agent msg ()] ->

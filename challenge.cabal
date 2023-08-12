@@ -23,10 +23,13 @@ common shared
     -fprint-explicit-foralls -fprint-explicit-kinds
 
   default-extensions:
+    BlockArguments
     DataKinds
     DerivingStrategies
     GeneralizedNewtypeDeriving
+    LambdaCase
     MultiParamTypeClasses
+    RecordWildCards
     ViewPatterns
 
   build-depends:      base
@@ -38,6 +41,7 @@ library
   build-depends:
     , polysemy
     , stm
+    , utility-hth
 
   exposed-modules: HDT.Tasks
   other-modules:

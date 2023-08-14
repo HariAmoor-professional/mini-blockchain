@@ -41,7 +41,7 @@ library
   build-depends:
     , polysemy
     , stm
-    , utility-hth
+    , utility-ht
 
   exposed-modules: HDT.Tasks
   other-modules:

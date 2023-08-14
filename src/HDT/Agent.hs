@@ -17,7 +17,7 @@ newtype Agent msg a
       ( Sem
           '[ AtomicState Natural
            , Input msg
-           , Output msg
+           , Output (Natural, msg)
            ]
           a
       )
@@ -29,7 +29,9 @@ delay = MkAgent $ atomicModify @Natural (+ 1)
 broadcast ::
   msg ->
   Agent msg ()
-broadcast = MkAgent . output
+broadcast m = MkAgent $ do
+  t <- atomicGet @Natural
+  output (t, m)
 
 receive :: Agent msg msg
 receive = MkAgent input

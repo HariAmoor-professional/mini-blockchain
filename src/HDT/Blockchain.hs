@@ -41,7 +41,7 @@ chainValid ::
 chainValid _ currSlot Genesis = currSlot >= 0
 chainValid n currSlot (a :> b) =
   currSlot >= slot b -- Not exceeding time
-    & creator b == slotLeader n (slot b) -- Correct slot leader
+    && creator b == slotLeader n (slot b) -- Correct slot leader
       && slot b
         > ( case a of
               Genesis -> 0
@@ -67,16 +67,13 @@ node = currentChain Genesis
       slot <- MkAgent (atomicGet @Natural)
       if slotLeader n slot == creator
         then do
-          NewChain other <- receive
-          let newChain =
-                ( chainValid other
-                    && chainLength other
-                    > chainLength l
-                    ?: (other, l)
-                )
-                  :> Block {..}
-          broadcast $ NewChain newChain
-          currentChain newChain n creator
+          receive >>= \case
+            NewChain other -> do
+              let newChain = (chainValid n slot other && chainLength other > chainLength l ?: (other, l)) :> Block {..}
+              broadcast $ NewChain newChain
+              currentChain newChain n creator
+            Time 0 -> broadcast (NewChain l) >> currentChain l n creator
+            Time _ -> currentChain l n creator
         else currentChain l n creator
 
 runPure ::

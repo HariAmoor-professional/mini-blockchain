@@ -1,37 +1,28 @@
 module HDT.Agent (
-  Agent (..),
+  Agent,
   delay,
   broadcast,
   receive,
+  Eff (..),
 ) where
 
 import Polysemy
-import Polysemy.AtomicState
-import Polysemy.Input
-import Polysemy.Output
+import Polysemy.Async
 
-import Numeric.Natural
+type Agent msg a = Sem '[Eff msg, Async, Embed IO, Final IO] a
 
-newtype Agent msg a
-  = MkAgent
-      ( Sem
-          '[ AtomicState Natural
-           , Input msg
-           , Output (Natural, msg)
-           ]
-          a
-      )
-  deriving newtype (Functor, Applicative, Monad)
+data Eff msg :: Effect where
+  Delay_ :: Eff msg m ()
+  Broadcast_ :: msg -> Eff msg m ()
+  Receive_ :: Eff msg m msg
 
-delay :: Agent msg ()
-delay = MkAgent $ atomicModify @Natural (+ 1)
+$(makeSem ''Eff)
 
-broadcast ::
-  msg ->
-  Agent msg ()
-broadcast m = MkAgent $ do
-  t <- atomicGet @Natural
-  output (t, m)
+delay :: forall msg. Agent msg ()
+delay = delay_ @msg
+
+broadcast :: msg -> Agent msg ()
+broadcast = broadcast_
 
 receive :: Agent msg msg
-receive = MkAgent input
+receive = receive_

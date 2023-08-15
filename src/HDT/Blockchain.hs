@@ -9,23 +9,51 @@ module HDT.Blockchain (
 ) where
 
 import HDT.Agent
-import HDT.Skeleton
+import HDT.Interpret
+import HDT.Skeleton (BftMessage (..), Block (..), Chain (..), NodeId, Slot)
 
-import Polysemy.AtomicState
+import Polysemy
+import Polysemy.Async
+
+import Control.Concurrent.ParallelIO.Local
+import Control.Concurrent.STM
 
 import Data.Bool.HT
-
 import Numeric.Natural
 
 runIO ::
+  forall msg.
   Show msg =>
   [Agent msg ()] ->
   IO ()
-runIO = error "TODO: implement runIO"
+runIO agents = do
+  masterChan :: TChan msg <- newTChanIO
+  let dup = atomically $ dupTChan masterChan
+  _ <- withPool (length agents + 1) $ \pool -> 
+    parallel pool 
+      $ printForever masterChan : (runAgent dup <$> agents)
+  return mempty
+  where
+    printForever :: Show msg => TChan msg -> IO ()
+    printForever masterChan = 
+      atomically (readTChan masterChan)
+        >>= print
+        >> printForever masterChan
+
+    runAgent :: IO (TChan msg) -> Agent msg () -> IO ()
+    runAgent c a = c >>= flip runAgent' a
+    
+    runAgent' :: TChan msg -> Agent msg () -> IO ()
+    runAgent' chan agent = do
+      runFinal
+      . embedToFinal
+      . asyncToIOFinal
+      . effToIO chan
+      $ do agent
 
 chainLength :: Chain -> Int
 chainLength Genesis = 0
-chainLength (l :> _) = chainLength l + 1
+chainLength (l HDT.Skeleton.:> _) = chainLength l + 1
 
 slotLeader ::
   Int ->
@@ -39,44 +67,50 @@ chainValid ::
   Chain ->
   Bool
 chainValid _ currSlot Genesis = currSlot >= 0
-chainValid n currSlot (a :> b) =
+chainValid n currSlot (a HDT.Skeleton.:> b) =
   currSlot >= slot b -- Not exceeding time
     && creator b == slotLeader n (slot b) -- Correct slot leader
-      && slot b
-        > ( case a of
-              Genesis -> 0
-              _ :> a' -> slot a'
-          )
-      && chainValid n currSlot a -- Strictly increasing
+    && slot b
+      > ( case a of
+            Genesis -> 0
+            _ HDT.Skeleton.:> a' -> slot a'
+        )
+    && chainValid n currSlot a -- Strictly increasing
 
 clock :: Agent BftMessage a
-clock =
-  delay
-    >> MkAgent (atomicGet @Natural)
-    >>= broadcast . Time
-    >> clock
+clock = initClock 0
+  where
+    initClock t =
+      broadcast (Time t)
+        >> delay
+        >> initClock (t + 1)
 
 node ::
   Int ->
   NodeId ->
   Agent BftMessage a
-node = currentChain Genesis
+node = currentChain Genesis 0
   where
-    currentChain :: Chain -> Int -> NodeId -> Agent BftMessage a
-    currentChain l n creator = do
-      slot <- MkAgent (atomicGet @Natural)
-      if slotLeader n slot == creator
-        then do
-          receive >>= \case
-            NewChain other -> do
-              let newChain = (chainValid n slot other && chainLength other > chainLength l ?: (other, l)) :> Block {..}
+    currentChain :: Chain -> Natural -> Int -> NodeId -> Agent BftMessage a
+    currentChain l lastSlot n creator =
+      receive >>= \case
+        NewChain Genesis -> 
+          if chainLength l > 0 
+            then currentChain l lastSlot n creator
+            else currentChain Genesis lastSlot n creator
+        NewChain (c :> b) -> do
+          let newChain = chainValid n lastSlot (c :> b) && chainLength (c :> b) > chainLength l ?: (c :> b, l)
+          currentChain newChain lastSlot n creator
+        Time slot -> 
+          if slotLeader n slot == creator && slot > 0
+            then do
+              let newChain = l :> Block { .. }
               broadcast $ NewChain newChain
-              currentChain newChain n creator
-            Time 0 -> broadcast (NewChain l) >> currentChain l n creator
-            Time _ -> currentChain l n creator
-        else currentChain l n creator
+              currentChain newChain slot n creator
+            else currentChain l slot n creator
 
 runPure ::
+  forall msg.
   [Agent msg ()] ->
   [(Natural, msg)]
-runPure = error "TODO: implement runPure"
+runPure _ = undefined

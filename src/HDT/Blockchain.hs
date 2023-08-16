@@ -9,8 +9,9 @@ module HDT.Blockchain (
 ) where
 
 import HDT.Agent
-import HDT.Interpret
-import HDT.Skeleton (BftMessage (..), Block (..), Chain (..), NodeId, Slot)
+import HDT.Experimental
+import HDT.Impure
+import HDT.Skeleton
 
 import Polysemy
 
@@ -19,6 +20,8 @@ import Control.Concurrent.STM
 
 import Data.Bool.HT
 import Numeric.Natural
+
+import Conduit
 
 runIO :: forall msg. (Show msg) => [Sem [Agent msg, Embed IO] ()] -> IO ()
 runIO agents = do
@@ -60,7 +63,6 @@ chainValid n currSlot (a :> b) =
 clock :: forall r a. (Member (Agent BftMessage) r) => Sem r a
 clock = initClock 0
   where
-    initClock :: Natural -> Sem r a
     initClock t =
       broadcast (Time t)
         >> delay @BftMessage
@@ -86,5 +88,11 @@ node = currentChain Genesis 0
               currentChain newChain slot n creator
             else currentChain l slot n creator
 
-runPure :: forall msg r. (Member (Agent msg) r) => [Sem r ()] -> [(Natural, msg)]
-runPure _ = undefined
+-- Implement the `Conduit` interpreter given in HDT.Experimental
+runPure ::
+  forall msg.
+  [Sem '[Agent msg, Embed (ConduitT msg msg Identity)] ()] ->
+  [(Natural, msg)]
+runPure agents = undefined
+  where
+    _conduitAgents = runM . effPureEval <$> agents

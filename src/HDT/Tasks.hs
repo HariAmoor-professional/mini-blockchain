@@ -9,6 +9,7 @@ module HDT.Tasks (
   broadcast,
   receive,
   PingPongMessage (..),
+  BftMessage (..),
   ping,
   pong,
   runIO,

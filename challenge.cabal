@@ -48,6 +48,7 @@ library
   import:          shared
   hs-source-dirs:  src
   build-depends:
+    , conduit
     , parallel-io
     , polysemy
     , polysemy-plugin
@@ -58,13 +59,28 @@ library
   other-modules:
     HDT.Agent
     HDT.Blockchain
-    HDT.Interpret
+    HDT.Experimental
+    HDT.Impure
     HDT.Skeleton
 
-  ghc-options: -fplugin=Polysemy.Plugin
+  ghc-options:     -fplugin=Polysemy.Plugin
 
-executable challenge
+executable bft
   import:         shared
   build-depends:  with-utf8
-  hs-source-dirs: app
-  main-is:        Main.hs
+  hs-source-dirs: examples
+  build-depends:
+    , anastasia-labs-challenge
+    , polysemy
+
+  main-is:        BFT.hs
+
+executable ping-pong
+  import:         shared
+  build-depends:  with-utf8
+  hs-source-dirs: examples
+  build-depends:
+    , anastasia-labs-challenge
+    , polysemy
+
+  main-is:        PingPong.hs

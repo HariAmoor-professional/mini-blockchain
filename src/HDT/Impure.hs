@@ -1,10 +1,11 @@
-module HDT.Interpret (effToIO) where
+module HDT.Impure (effToIO) where
 
 import HDT.Agent
-import Polysemy
 
 import Control.Concurrent
 import Control.Concurrent.STM
+
+import Polysemy
 
 effToIO ::
   forall r msg.

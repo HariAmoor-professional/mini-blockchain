@@ -21,11 +21,7 @@ import Control.Concurrent.STM
 import Data.Bool.HT
 import Numeric.Natural
 
-runIO ::
-  forall msg.
-  Show msg =>
-  [Agent msg ()] ->
-  IO ()
+runIO :: forall msg.  (Show msg) => [Sem [Agent msg, Async, Embed IO, Final IO] ()] -> IO ()
 runIO agents = do
   masterChan :: TChan msg <- newTChanIO
   let dup = atomically $ dupTChan masterChan
@@ -40,15 +36,13 @@ runIO agents = do
         >>= print
         >> printForever masterChan
 
-    runAgent :: IO (TChan msg) -> Agent msg () -> IO ()
     runAgent c a = c >>= flip runAgent' a
-    
-    runAgent' :: TChan msg -> Agent msg () -> IO ()
+
     runAgent' chan agent = do
       runFinal
-      . embedToFinal
-      . asyncToIOFinal
-      . effToIO chan
+      $ embedToFinal
+      $ asyncToIOFinal
+      $ effToIO chan
       $ do agent
 
 chainLength :: Chain -> Int
@@ -77,21 +71,23 @@ chainValid n currSlot (a HDT.Skeleton.:> b) =
         )
     && chainValid n currSlot a -- Strictly increasing
 
-clock :: Agent BftMessage a
+clock :: forall r a. (Member (Agent BftMessage) r) => Sem r a
 clock = initClock 0
   where
+    initClock :: Natural -> Sem r a
     initClock t =
       broadcast (Time t)
-        >> delay
+        >> delay @BftMessage
         >> initClock (t + 1)
 
 node ::
+  forall r a.
+  (Member (Agent BftMessage) r) =>
   Int ->
   NodeId ->
-  Agent BftMessage a
+  Sem r a
 node = currentChain Genesis 0
   where
-    currentChain :: Chain -> Natural -> Int -> NodeId -> Agent BftMessage a
     currentChain l lastSlot n creator =
       receive >>= \case
         NewChain Genesis -> 
@@ -110,7 +106,8 @@ node = currentChain Genesis 0
             else currentChain l slot n creator
 
 runPure ::
-  forall msg.
-  [Agent msg ()] ->
+  forall msg r.
+  (Member (Agent msg) r) =>
+  [Sem r ()] ->
   [(Natural, msg)]
 runPure _ = undefined

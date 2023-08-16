@@ -12,15 +12,17 @@ module HDT.Skeleton (
 import Numeric.Natural (Natural)
 import Text.Printf (printf)
 
+import Polysemy
+
 import HDT.Agent
 
 data PingPongMessage
   = Ping
   | Pong
-  deriving (Show)
+  deriving stock (Show)
 
-ping :: Agent PingPongMessage ()
-ping = delay >> broadcast Ping >> go
+ping :: (Member (Agent PingPongMessage) r) => Sem r ()
+ping = delay @PingPongMessage >> broadcast Ping >> go
   where
     go = do
       msg <- receive
@@ -28,11 +30,11 @@ ping = delay >> broadcast Ping >> go
         Ping -> go
         Pong -> ping
 
-pong :: Agent PingPongMessage ()
+pong :: (Member (Agent PingPongMessage) r) => Sem r ()
 pong = do
   msg <- receive
   case msg of
-    Ping -> delay >> broadcast Pong >> pong
+    Ping -> delay @PingPongMessage >> broadcast Pong >> pong
     Pong -> pong
 
 type Slot = Natural
@@ -55,9 +57,9 @@ data Chain
 
 instance Show Chain where
   showsPrec _ Genesis = showString "Genesis"
-  showsPrec d (c :> b) = showParen (d > 10) $ showsPrec 0 c . showString " :> " . showString (show b)
+  showsPrec d (c :> b) = showParen (d > 10) $ shows c . showString " :> " . showString (show b)
 
 data BftMessage
   = Time Slot
   | NewChain Chain
-  deriving (Show)
+  deriving stock (Show)

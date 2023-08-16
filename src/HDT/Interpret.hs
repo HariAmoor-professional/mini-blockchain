@@ -13,16 +13,16 @@ effToIO ::
   forall r msg.
   Members '[Async, Embed IO, Final IO] r =>
   TChan msg ->
-  InterpreterFor (Eff msg) r
+  InterpreterFor (Agent msg) r
 effToIO chan = interpret \case
-  Delay_ ->
+  Delay ->
     do
       async $ embed $ threadDelay 1000000
       >>= await
       >>= \case
         Just _ -> return mempty
         Nothing -> embed $ die "Delay returned `Nothing`"
-  Broadcast_ m -> do
+  Broadcast m -> do
     async do
       embed $ do
         atomically $ writeTChan chan m
@@ -30,7 +30,7 @@ effToIO chan = interpret \case
       >>= \case
         Just _ -> return mempty
         Nothing -> embed $ die "Broadcast returned `Nothing`"
-  Receive_ ->
+  Receive ->
     do
       async $
         embed $ atomically (readTChan chan)

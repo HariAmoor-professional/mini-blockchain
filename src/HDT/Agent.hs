@@ -2,7 +2,7 @@ module HDT.Agent (
   Agent (..),
   delay,
   broadcast,
-  receive
+  receive,
 ) where
 
 import Polysemy

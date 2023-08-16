@@ -62,8 +62,6 @@ library
 
 executable challenge
   import:         shared
-  build-depends:
-    , with-utf8
-
+  build-depends:  with-utf8
   hs-source-dirs: app
   main-is:        Main.hs

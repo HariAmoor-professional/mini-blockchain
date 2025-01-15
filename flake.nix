@@ -6,15 +6,14 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     haskell-flake.url = "github:srid/haskell-flake";
     treefmt-nix.url = "github:numtide/treefmt-nix";
-    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = import inputs.systems;
-      imports = [
-        inputs.haskell-flake.flakeModule
-        inputs.treefmt-nix.flakeModule
+      systems = inputs.nixpkgs.lib.systems.flakeExposed;
+      imports = with inputs; [
+        haskell-flake.flakeModule
+        treefmt-nix.flakeModule
       ];
       perSystem = { self', system, lib, config, pkgs, ... }: {
         haskellProjects.default = {
@@ -22,27 +21,16 @@
           autoWire = [ "packages" "apps" "checks" ]; # Wire all but the devShell
         };
 
-        treefmt.config = {
+        treefmt = {
           projectRootFile = "flake.nix";
 
           programs = {
-            /*
-              We prefer fourmolu b/c we don't want to be tied
-              down to Tweag's formatting preferences
-            */
-            ormolu.enable = true;
-            ormolu.package = pkgs.haskellPackages.fourmolu;
-
+            fourmolu.enable = true;
             nixpkgs-fmt.enable = true;
             cabal-fmt.enable = true;
-            hlint.enable = true;
-          };
-
-          settings.formatter.ormolu = {
-            options = [
-              "--ghc-opt"
-              "-XImportQualifiedPost"
-            ];
+            just.enable = true;
+            yamlfmt.enable = true;
+            mdformat.enable = true;
           };
         };
 

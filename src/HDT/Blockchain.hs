@@ -32,7 +32,7 @@ runIO agents = do
       printForever masterChan : (runAgent dup <$> agents)
   return mempty
   where
-    printForever :: Show msg => TChan msg -> IO ()
+    printForever :: (Show msg) => TChan msg -> IO ()
     printForever masterChan =
       atomically (readTChan masterChan)
         >>= print

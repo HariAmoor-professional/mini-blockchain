@@ -9,7 +9,7 @@ import Polysemy
 
 effToIO ::
   forall r msg.
-  Member (Embed IO) r =>
+  (Member (Embed IO) r) =>
   TChan msg ->
   InterpreterFor (Agent msg) r
 effToIO chan = interpret \case
